@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>PRAMZX DeFi - Monad Testnet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+  /* Reset and global */
+  * {
+    box-sizing: border-box;
+    margin: 0; padding: 0;
+    font-family: 'Orbitron', monospace, sans-serif;
+  }
+  html, body {
+    height: 100%;
+    background: url('https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+    background-size: cover;
+    color: #0ff;
+    overflow: hidden;
+  }
+  #app {
+    max-width: 100vw;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.85);
+    height: 100vh;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0ff;
+    color: #000;
+    padding: 0.8rem 1rem;
+    user-select: none;
+  }
+  header h1 {
+    font-size: 1.5rem;
+  }
+  #wallet-connect-btn {
+    background: #002222;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #0ff;
+    transition: background-color 0.3s ease;
+  }
+  #wallet-connect-btn:hover {
+    background: #00ffffcc;
+    color: #000;
+  }
+  main {
+    flex: 1;
+    display: flex;
+    height: calc(100vh - 54px);
+    overflow: hidden;
+  }
+  nav {
+    width: 7rem;
+    background: #002222;
+    display: flex;
+    flex-direction: column;
+  }
+  nav button {
+    background: transparent;
+    border: none;
+    color: #0ff;
+    padding: 1rem;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.75rem;
+  }
+  nav button.active,
+  nav button:hover {
+    background: #00ffff44;
+    border-left: 4px solid #0ff;
+  }
+  section {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+  }
+  section h2 {
+    margin-bottom: 0.75rem;
+    text-shadow: 0 0 8px #0ff;
+  }
+  label {
+    display: block;
+    margin: 0.5rem 0 0.2rem;
+  }
+  select, input[type=number], input[type=text] {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: #000c;
+    border: 1px solid #0ff;
+    border-radius: 6px;
+    color: #0ff;
+    font-size: 1rem;
+  }
+  button.action-btn {
+    margin-top: 1rem;
+    background: #0ff;
+    color: #000;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+  }
+  button.action-btn:hover:enabled {
+    background: #00eeff;
+  }
+  button.action-btn:disabled {
+    background: #004d4d;
+    cursor: default;
+  }
+  .balance {
+    color: #0ff;
+    font-weight: 600;
+    margin-top: 0.3rem;
+  }
+  .tx-status {
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid #0ff;
+    border-radius: 10px;
+    background-color: #002222;
+  }
+  /* Scrollbar for nice UI */
+  section::-webkit-scrollbar {
+    width: 6px;
+  }
+  section::-webkit-scrollbar-thumb {
+    background: #0ff;
+    border-radius: 3px;
+  }
+  /* Responsive mobile */
+  @media (max-width: 700px) {
+    nav {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      border-bottom: 1px solid #0ff;
+    }
+    nav button {
+      flex: 1;
+      border-left: none;
+      border-bottom: 4px solid transparent;
+      font-size: 0.875rem;
+      padding: 0.8rem;
+      white-space: nowrap;
+    }
+    nav button.active,
+    nav button:hover {
+      border-bottom: 4px solid #0ff;
+      background: transparent;
+    }
+    main {
+      flex-direction: column;
+      height: auto;
+    }
+    section {
+      height: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+  }
+  /* Token dropdown style */
+  select.token-select {
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  /* Confirmation modal */
+  #modal-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,255,255,0.15);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #modal {
+    background: #001a1a;
+    border: 2px solid #0ff;
+    padding: 1.2rem 1.6rem;
+    border-radius: 15px;
+    width: 90vw;
+    max-width: 400px;
+    box-shadow: 0 0 25px #0ff;
+  }
+  #modal h3 {
+    margin-bottom: 0.7rem;
+  }
+  #modal p {
+    margin-bottom: 1rem;
+    word-break: break-word;
+  }
+  #modal button {
+    background: #0ff;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    margin-right: 0.8rem;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #000;
+  }
+  #modal button:last-child {
+    background: #002222;
+    color: #0ff;
+    border: 1px solid #0ff;
+  }
+  /* Horizontal form grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 500px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>PRAMZX DeFi - Monad Testnet</h1>
+    <button id="wallet-connect-btn">Connect Wallet</button>
+  </header>
+  <main>
+    <nav>
+      <button class="active" data-tab="swap">Swap</button>
+      <button data-tab="liquidity">Liquidity</button>
+      <button data-tab="stake">Stake</button>
+      <button data-tab="unstake">Unstake</button>
+      <button data-tab="deploy">Deploy</button>
+      <button data-tab="create-nft">Create NFT</button>
+      <button data-tab="crosschain">Crosschain</button>
+    </nav>
+
+    <section id="swap" class="tab-content" style="display: block;">
+      <h2>Swap Tokens</h2>
+      <div class="form-grid">
+        <div>
+          <label for="swap-from-token">From Token</label>
+          <select id="swap-from-token" class="token-select"></select>
+          <div class="balance" id="balance-from">Balance: -</div>
+        </div>
+        <div>
+          <label for="swap-to-token">To Token</label>
+          <select id="swap-to-token" class="token-select"></select>
+          <div class="balance" id="balance-to">Balance: -</div>
+        </div>
+        <div style="grid-column: 1 / span 2;">
+          <label for="swap-amount">Amount</label>
+          <input type="number" min="0" step="any" id="swap-amount" placeholder="Amount to swap" />
+        </div>
+      </div>
+      <button id="swap-btn" class="action-btn" disabled>Swap</button>
+      <div class="tx-status" id="swap-status"></div>
+    </section>
+
+    <section id="liquidity" class="tab-content" style="display:none;">
+      <h2>Liquidity</h2>
+      <div class="form-grid">
+        <div>
+          <label for="liquidity-token-a">Token A</label>
+          <select id="liquidity-token-a" class="token-select"></select>
+          <div class="balance" id="balance-token-a">Balance: -</div>
+          <label for="liquidity-amount-a">Amount A</label>
+          <input type="number" min="0" step="any" id="liquidity-amount-a" />
+        </div>
+        <div>
+          <label for="liquidity-token-b">Token B</label>
+          <select id="liquidity-token-b" class="token-select"></select>
+          <div class="balance" id="balance-token-b">Balance: -</div>
+          <label for="liquidity-amount-b">Amount B</label>
+          <input type="number" min="0" step="any" id="liquidity-amount-b" />
+        </div>
+      </div>
+      <button id="add-liquidity-btn" class="action-btn" disabled>Add Liquidity</button>
+      <div class="tx-status" id="liquidity-status"></div>
+    </section>
+
+    <section id="stake" class="tab-content" style="display:none;">
+      <h2>Stake Tokens</h2>
+      <label for="stake-token">Token to Stake</label>
+      <select id="stake-token" class="token-select"></select>
+      <div class="balance" id="balance-stake">Balance: -</div>
+      <label for="stake-amount">Amount</label>
+      <input type="number" min="0" step="any" id="stake-amount" />
+      <button id="stake-btn" class="action-btn" disabled>Stake</button>
+      <div class="tx-status" id="stake-status"></div>
+    </section>
+
+    <section id="unstake" class="tab-content" style="display:none;">
+      <h2>Unstake Tokens</h2>
+      <label for="unstake-token">Token to Unstake</label>
+      <select id="unstake-token" class="token-select"></select>
+      <label for="unstake-amount">Amount</label>
+      <input type="number" min="0" step="any" id="unstake-amount" />
+      <button id="unstake-btn" class="action-btn" disabled>Unstake</button>
+      <div class="tx-status" id="unstake-status"></div>
+    </section>
+
+    <section id="deploy" class="tab-content" style="display:none;">
+      <h2>Deploy Smart Contract</h2>
+      <label for="deploy-contract-type">Contract Type</label>
+      <select id="deploy-contract-type">
+        <option value="erc20">ERC-20 Token</option>
+        <option value="erc721">ERC-721 NFT</option>
+      </select>
+      <label for="deploy-token-name">Name</label>
+      <input type="text" id="deploy-token-name" placeholder="Name" />
+      <label for="deploy-token-symbol">Symbol</label>
+      <input type="text" id="deploy-token-symbol" placeholder="Symbol" />
+      <button id="deploy-btn" class="action-btn" disabled>Deploy</button>
+      <div class="tx-status" id="deploy-status"></div>
+    </section>
+
+    <section id="create-nft" class="tab-content" style="display:none;">
+      <h2>Create NFT</h2>
+      <label for="nft-name">NFT Name</label>
+      <input type="text" id="nft-name" placeholder="Name" />
+      <label for="nft-description">Description</label>
+      <input type="text" id="nft-description" placeholder="Description" />
+      <label for="nft-url">Image URL</label>
+      <input type="text" id="nft-url" placeholder="IPFS or Image URL" />
+      <button id="create-nft-btn" class="action-btn" disabled>Create NFT</button>
+      <div class="tx-status" id="create-nft-status"></div>
+    </section>
+
+    <section id="crosschain" class="tab-content" style="display:none;">
+      <h2>Crosschain Transfer (Testnets)</h2>
+      <div class="form-grid">
+        <div>
+          <label for="crosschain-from-network">From Network</label>
+          <select id="crosschain-from-network"></select>
+        </div>
+        <div>
+          <label for="crosschain-to-network">To Network</label>
+          <select id="crosschain-to-network"></select>
+        </div>
+      </div>
+      <label for="crosschain-token">Token</label>
+      <select id="crosschain-token" class="token-select"></select>
+      <label for="crosschain-amount">Amount</label>
+      <input type="number" min="0" step="any" id="crosschain-amount" />
+      <button id="crosschain-btn" class="action-btn" disabled>Transfer Crosschain</button>
+      <div class="tx-status" id="crosschain-status"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal for confirmations -->
+<div id="modal-bg">
+  <div id="modal">
+    <h3 id="modal-title">Confirm Transaction</h3>
+    <p id="modal-body">Are you sure you want to do this?</p>
+    <button id="modal-confirm-btn">Confirm</button>
+    <button id="modal-cancel-btn">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+<script>
+(async () => {
+  // Supported tokens list (symbol=>address on Monad testnet or other testnets)
+  const TOKENS = [
+    { symbol: 'mon', name: 'MON', address: '0xmonaddress00000000000000000000000000001' },
+    { symbol: 'wmom', name: 'WMON', address: '0xwmomaddress000000000000000000000000002' },
+    { symbol: 'gmon', name: 'GMON', address: '0xgmonaddress0000000000000000000000000003' },
+    { symbol: 'shmon', name: 'SHMON', address: '0xshmonaddress000000000000000000000000004' },
+    { symbol: 'aprmon', name: 'APRMON', address: '0xaprmonaddress00000000000000000000000005' },
+    { symbol: 'eth', name: 'ETH', address: '0x0000000000000000000000000000000000000000' }, // native
+    { symbol: 'weth', name: 'WETH', address: '0xwethaddress0000000000000000000000000006' },
+    { symbol: 'wsolana', name: 'WSOLANA', address: '0xwsoladdress0000000000000000000000000007' },
+    { symbol: 'bean', name: 'BEAN', address: '0xbeanaddress0000000000000000000000000008' }
+  ];
+
+  // Supported EVM testnet networks - example chainIds, names and rpc urls (need to replace actual Monad details and other testnets)
+  const NETWORKS = [
+    { chainId: 1111, name: "Monad Testnet", rpc: "https://rpc.monad-testnet.io" },
+    { chainId: 5, name: "Goerli Testnet", rpc: "https://goerli.infura.io/v3/your-infura-key" },
+    { chainId: 80001, name: "Polygon Mumbai", rpc: "https://matic-mumbai.chainstacklabs.com" },
+    { chainId: 97, name: "BSC Testnet", rpc: "https://data-seed-prebsc-1-s1.binance.org:8545" }
+  ];
+
+  // Wallet provider and ethers provider variables
+  let provider = null;
+  let signer = null;
+  let connectedAddress = null;
+  let currentChainId = null;
+
+  // WalletConnect provider object (used if WalletConnect is selected)
+  let wcProvider = null;
+
+  // Cached balances for tokens
+  let balances = {};
+
+  // UI elements references
+  const walletBtn = document.getElementById('wallet-connect-btn');
+  const tabs = document.querySelectorAll('nav button');
+  const tabSections = document.querySelectorAll('section.tab-content');
+  // Token dropdown references for swap
+  const swapFromTokenSelect = document.getElementById('swap-from-token');
+  const swapToTokenSelect = document.getElementById('swap-to-token');
+  // Balances display swap
+  const balanceFromDisplay = document.getElementById('balance-from');
+  const balanceToDisplay = document.getElementById('balance-to');
+  const swapAmountInput = document.getElementById('swap-amount');
+  const swapBtn = document.getElementById('swap-btn');
+  const swapStatus = document.getElementById('swap-status');
+
+  // Liquidity selects
+  const liquidityTokenASelect = document.getElementById('liquidity-token-a');
+  const liquidityTokenBSelect = document.getElementById('liquidity-token-b');
+  const liquidityAmountAInput = document.getElementById('liquidity-amount-a');
+  const liquidityAmountBInput = document.getElementById('liquidity-amount-b');
+  const addLiquidityBtn = document.getElementById('add-liquidity-btn');
+  const liquidityStatus = document.getElementById('liquidity-status');
+
+  // Stake
+  const stakeTokenSelect = document.getElementById('stake-token');
+  const stakeAmountInput = document.getElementById('stake-amount');
+  const stakeBtn = document.getElementById('stake-btn');
+  const stakeStatus = document.getElementById('stake-status');
+  const balanceStakeDisplay = document.getElementById('balance-stake');
+
+  // Unstake
+  const unstakeTokenSelect = document.getElementById('unstake-token');
+  const unstakeAmountInput = document.getElementById('unstake-amount');
+  const unstakeBtn = document.getElementById('unstake-btn');
+  const unstakeStatus = document.getElementById('unstake-status');
+
+  // Deploy
+  const deployContractTypeSelect = document.getElementById('deploy-contract-type');
+  const deployTokenNameInput = document.getElementById('deploy-token-name');
+  const deployTokenSymbolInput = document.getElementById('deploy-token-symbol');
+  const deployBtn = document.getElementById('deploy-btn');
+  const deployStatus = document.getElementById('deploy-status');
+
+  // Create NFT
+  const nftNameInput = document.getElementById('nft-name');
+  const nftDescriptionInput = document.getElementById('nft-description');
+  const nftUrlInput = document.getElementById('nft-url');
+  const createNFTBtn = document.getElementById('create-nft-btn');
+  const createNFTStatus = document.getElementById('create-nft-status');
+
+  // Crosschain
+  const crosschainFromNetworkSelect = document.getElementById('crosschain-from-network');
+  const crosschainToNetworkSelect = document.getElementById('crosschain-to-network');
+  const crosschainTokenSelect = document.getElementById('crosschain-token');
+  const crosschainAmountInput = document.getElementById('crosschain-amount');
+  const crosschainBtn = document.getElementById('crosschain-btn');
+  const crosschainStatus = document.getElementById('crosschain-status');
+
+  // Modal
+  const modalBg = document.getElementById('modal-bg');
+  const modalTitle = document.getElementById('modal-title');
+  const modalBody = document.getElementById('modal-body');
+  const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+  const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+  // Utility: Format big numbers with decimals
+  function formatBigNumber(value, decimals = 18) {
+    if (!value) return '0';
+    try {
+      return ethers.utils.formatUnits(value, decimals);
+    } catch {
+      return value.toString();
+    }
+  }
+
+  // Utility: Parse number string to BigNumber with decimals
+  function parseAmount(amountStr, decimals = 18) {
+    try {
+      return ethers.utils.parseUnits(amountStr.toString(), decimals);
+    } catch {
+      return null;
+    }
+  }
+
+  // Show modal confirmation for blockchain transaction
+  function showModal(title, body, onConfirm) {
+    modalTitle.textContent = title;
+    modalBody.textContent = body;
+    modalBg.style.display = 'flex';
+    function confirmHandler() {
+      onConfirm();
+      closeModal();
+    }
+    function cancelHandler() {
+      closeModal();
+    }
+    modalConfirmBtn.addEventListener('click', confirmHandler, { once: true });
+    modalCancelBtn.addEventListener('click', cancelHandler, { once: true });
+  }
+  function closeModal() {
+    modalBg.style.display = 'none';
+  }
+
+  // Populate token select dropdowns
+  function populateTokenSelect(selectElement, tokens) {
+    selectElement.innerHTML = '';
+    tokens.forEach(token => {
+      let option = document.createElement('option');
+      option.value = token.address;
+      option.textContent = `${token.symbol.toUpperCase()} - ${token.name}`;
+      selectElement.appendChild(option);
+    });
+  }
+  // Populate network selects
+  function populateNetworkSelect(selectElement, networks) {
+    selectElement.innerHTML = '';
+    networks.forEach(net => {
+      let option = document.createElement('option');
+      option.value = net.chainId;
+      option.textContent = `${net.name} (ChainId: ${net.chainId})`;
+      selectElement.appendChild(option);
+    });
+  }
+
+  // Show wallet address shortened
+  function shortAddress(addr) {
+    if (!addr) return '';
+    return addr.slice(0,6)+'...'+addr.slice(-4);
+  }
+
+  // Update wallet button text UI
+  function updateWalletBtn() {
+    if (connectedAddress) {
+      walletBtn.textContent = 'Disconnect ' + shortAddress(connectedAddress);
+    } else {
+      walletBtn.textContent = 'Connect Wallet';
+    }
+  }
+
+  // Fetch and update token balances for given tokens and address
+  async function updateBalances() {
+    if (!signer || !connectedAddress) return;
+    balances = {};
+    // For MON native token balance (chain native), special handle
+    try {
+      balances['ETH'] = await provider.getBalance(connectedAddress);
+    } catch(e) {
+      balances['ETH'] = ethers.BigNumber.from(0);
+    }
+    // For other tokens, call ERC20 balanceOf
+    for (const token of TOKENS) {
+      try {
+        if (token.symbol.toLowerCase() === 'eth' || token.address === '0x0000000000000000000000000000000000000000') {
+          // Already fetched native balance as ETH
+          continue;
+        }
+        let contract = new ethers.Contract(token.address, ERC20_ABI, provider);
+        let bal = await contract.balanceOf(connectedAddress);
+        balances[token.symbol.toUpperCase()] = bal;
+      } catch (e) {
+        balances[token.symbol.toUpperCase()] = ethers.BigNumber.from(0);
+      }
+    }
+    refreshBalanceUI();
+  }
+
+  // Refresh the displayed balances in UI
+  function refreshBalanceUI() {
+    // Swap tab balances
+    const fromToken = getTokenByAddress(swapFromTokenSelect.value);
+    const toToken = getTokenByAddress(swapToTokenSelect.value);
+    balanceFromDisplay.textContent = 'Balance: ' + (fromToken ? formatBigNumber(balances[fromToken.symbol.toUpperCase()]) : '-');
+    balanceToDisplay.textContent = 'Balance: ' + (toToken ? formatBigNumber(balances[toToken.symbol.toUpperCase()]) : '-');
+    // Liquidity
+    const tokenA = getTokenByAddress(liquidityTokenASelect.value);
+    const tokenB = getTokenByAddress(liquidityTokenBSelect.value);
+    document.getElementById('balance-token-a').textContent = 'Balance: ' + (tokenA ? formatBigNumber(balances[tokenA.symbol.toUpperCase()]) : '-');
+    document.getElementById('balance-token-b').textContent = 'Balance: ' + (tokenB ? formatBigNumber(balances[tokenB.symbol.toUpperCase()]) : '-');
+    // Stake
+    const stakeToken = getTokenByAddress(stakeTokenSelect.value);
+    balanceStakeDisplay.textContent = 'Balance: ' + (stakeToken ? formatBigNumber(balances[stakeToken.symbol.toUpperCase()]) : '-');
+  }
+
+  // Helper: get token object by address
+  function getTokenByAddress(addr) {
+    return TOKENS.find(t => t.address.toLowerCase() === addr.toLowerCase());
+  }
+
+  // Enable/Disable swap button based on input validity
+  function checkSwapInput() {
+    let valid = false;
+    const amount = swapAmountInput.value;
+    const fromToken = swapFromTokenSelect.value;
+    const toToken = swapToTokenSelect.value;
+    if (fromToken && toToken && amount && parseFloat(amount) > 0 && fromToken !== toToken) {
+      valid = true;
+    }
+    swapBtn.disabled = !valid;
+  }
+
+  // Enable/Disable liquidity button
+  function checkLiquidityInput() {
+    let valid = false;
+    const tokenA = liquidityTokenASelect.value;
+    const tokenB = liquidityTokenBSelect.value;
+    const amountA = liquidityAmountAInput.value;
+    const amountB = liquidityAmountBInput.value;
+    if (tokenA && tokenB && tokenA !== tokenB && amountA && amountB && parseFloat(amountA) > 0 && parseFloat(amountB) > 0) {
+      valid = true;
+    }
+    addLiquidityBtn.disabled = !valid;
+  }
+
+  // Enable/Disable stake button
+  function checkStakeInput() {
+    let valid = false;
+    const token = stakeTokenSelect.value;
+    const amount = stakeAmountInput.value;
+    if (token && amount && parseFloat(amount) > 0) {
+      valid = true;
+    }
+    stakeBtn.disabled = !valid;
+  }
+
+  // Enable/Disable unstake button
+  function checkUnstakeInput() {
+    let valid = false;
+    const token = unstakeTokenSelect.value;
+    const amount = unstakeAmountInput.value;
+    if (token && amount && parseFloat(amount) > 0) {
+      valid = true;
+    }
+    unstakeBtn.disabled = !valid;
+  }
+
+  // Enable/Disable deploy button
+  function checkDeployInput() {
+    let valid = false;
+    const type = deployContractTypeSelect.value;
+    const name = deployTokenNameInput.value.trim();
+    const symbol = deployTokenSymbolInput.value.trim();
+    if (type && name.length > 0 && symbol.length > 0) {
+      valid = true;
+    }
+    deployBtn.disabled = !valid;
+  }
+
+  // Enable/Disable create NFT button
+  function checkCreateNFTInput() {
+    let valid = false;
+    const name = nftNameInput.value.trim();
+    const description = nftDescriptionInput.value.trim();
+    const url = nftUrlInput.value.trim();
+    if (name.length > 0 && description.length > 0 && url.length > 0) {
+      valid = true;
+    }
+    createNFTBtn.disabled = !valid;
+  }
+
+  // Enable/Disable crosschain button
+  function checkCrosschainInput() {
+    let valid = false;
+    const fromNet = crosschainFromNetworkSelect.value;
+    const toNet = crosschainToNetworkSelect.value;
+    const token = crosschainTokenSelect.value;
+    const amount = crosschainAmountInput.value;
+    if (fromNet && toNet && fromNet !== toNet && token && amount && parseFloat(amount) > 0) {
+      valid = true;
+    }
+    crosschainBtn.disabled = !valid;
+  }
+
+  // Tab switch handler
+  tabs.forEach(tabBtn => {
+    tabBtn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      tabBtn.classList.add('active');
+      tabSections.forEach(section => {
+        section.style.display = section.id === tabBtn.dataset.tab ? 'block' : 'none';
+      });
+    });
+  });
+
+  // Wallet connect button handler - connect or disconnect
+  walletBtn.addEventListener('click', async () => {
+    if (connectedAddress) {
+      // Disconnect wallet
+      disconnectWallet();
+    } else {
+      // Connect wallet
+      await connectWallet();
+    }
+  });
+
+  // Connect wallet logic - Metamask, fallback to WalletConnect with options for OKX and Bitget
+  async function connectWallet() {
+    if (typeof window.ethereum !== 'undefined') {
+      // Metamask available
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        // Request account access
+        const accounts = await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        connectedAddress = accounts[0];
+        currentChainId = (await provider.getNetwork()).chainId;
+        updateWalletBtn();
+        await updateBalances();
+        setupEventListeners();
+        clearStatuses();
+        enableInputs();
+      } catch (error) {
+        alert('Failed to connect wallet: ' + error.message);
+      }
+    } else {
+      // No Metamask, fallback to WalletConnect for OKX or Bitget wallet
+      try {
+        wcProvider = new WalletConnectProvider.default({
+          rpc: NETWORKS.reduce((acc,v) => { acc[v.chainId] = v.rpc; return acc; }, {}),
+          qrcode: true,
+          pollingInterval: 12000,
+        });
+        await wcProvider.enable();
+        provider = new ethers.providers.Web3Provider(wcProvider);
+        signer = provider.getSigner();
+        connectedAddress = await signer.getAddress();
+        currentChainId = (await provider.getNetwork()).chainId;
+        updateWalletBtn();
+        await updateBalances();
+        setupEventListenersWalletConnect();
+        clearStatuses();
+        enableInputs();
+      } catch (error) {
+        alert('WalletConnect failed: ' + error.message);
+      }
+    }
+  }
+
+  // Disconnect wallet logic
+  async function disconnectWallet() {
+    if (wcProvider) {
+      await wcProvider.disconnect();
+      wcProvider = null;
+    }
+    provider = null;
+    signer = null;
+    connectedAddress = null;
+    currentChainId = null;
+    updateWalletBtn();
+    clearStatuses();
+    disableInputs();
+    clearBalances();
+  }
+
+  // Listen for accounts and chain changes Metamask
+  function setupEventListeners() {
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length > 0) {
+          connectedAddress = accounts[0];
+          updateWalletBtn();
+          updateBalances();
+        } else {
+          disconnectWallet();
+        }
+      });
+      window.ethereum.on('chainChanged', (chainIdHex) => {
+        currentChainId = parseInt(chainIdHex, 16);
+        updateBalances();
+      });
+    }
+  }
+  // Listen for WalletConnect session events
+  function setupEventListenersWalletConnect() {
+    if (wcProvider) {
+      wcProvider.on("accountsChanged", (accounts) => {
+        if (accounts.length > 0) {
+          connectedAddress = accounts[0];
+          updateWalletBtn();
+          updateBalances();
+        } else {
+          disconnectWallet();
+        }
+      });
+      wcProvider.on("chainChanged", (chainId) => {
+        currentChainId = chainId;
+        updateBalances();
+      });
+      wcProvider.on("disconnect", (code, reason) => {
+        disconnectWallet();
+      });
+    }
+  }
+
+  // Clear statuses on UI
+  function clearStatuses() {
+    swapStatus.textContent = '';
+    liquidityStatus.textContent = '';
+    stakeStatus.textContent = '';
+    unstakeStatus.textContent = '';
+    deployStatus.textContent = '';
+    createNFTStatus.textContent = '';
+    crosschainStatus.textContent = '';
+  }
+
+  // Disable all inputs buttons on disconnect
+  function disableInputs() {
+    swapBtn.disabled = true;
+    addLiquidityBtn.disabled = true;
+    stakeBtn.disabled = true;
+    unstakeBtn.disabled = true;
+    deployBtn.disabled = true;
+    createNFTBtn.disabled = true;
+    crosschainBtn.disabled = true;
+  }
+  // Clear balances displayed
+  function clearBalances() {
+    balanceFromDisplay.textContent = 'Balance: -';
+    balanceToDisplay.textContent = 'Balance: -';
+    document.getElementById('balance-token-a').textContent = 'Balance: -';
+    document.getElementById('balance-token-b').textContent = 'Balance: -';
+    balanceStakeDisplay.textContent = 'Balance: -';
+  }
+  // Enable inputs (to re-check validation)
+  function enableInputs() {
+    checkSwapInput();
+    checkLiquidityInput();
+    checkStakeInput();
+    checkUnstakeInput();
+    checkDeployInput();
+    checkCreateNFTInput();
+    checkCrosschainInput();
+  }
+  // ERC20 ABI minimal for balanceOf and approve/transfer
+  const ERC20_ABI = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function transfer(address to, uint amount) returns (bool)"
+  ];
+
+  // Simulate swaps and liquidity to focus on UI interaction and confirmation only
+  // In real app, integrate with smart contracts on Monad testnet and other testnets
+
+  // Swap button click
+  swapBtn.addEventListener('click', () => {
+    const fromToken = getTokenByAddress(swapFromTokenSelect.value);
+    const toToken = getTokenByAddress(swapToTokenSelect.value);
+    const amount = swapAmountInput.value;
+    showModal(`Confirm Swap`, `Swap ${amount} ${fromToken.symbol.toUpperCase()} to ${toToken.symbol.toUpperCase()}?`, async () => {
+      swapStatus.textContent = 'Processing swap transaction...';
+      try {
+        // Simulate delay for transaction
+        await new Promise(res => setTimeout(res, 3000));
+        swapStatus.textContent = `Swap successful! Swapped ${amount} ${fromToken.symbol.toUpperCase()} to ${toToken.symbol.toUpperCase()}.`;
+        await updateBalances();
+      } catch (err) {
+        swapStatus.textContent = `Swap failed: ${err.message}`;
+      }
+    });
+  });
+
+  // Liquidity add button click
+  addLiquidityBtn.addEventListener('click', () => {
+    const tokenA = getTokenByAddress(liquidityTokenASelect.value);
+    const tokenB = getTokenByAddress(liquidityTokenBSelect.value);
+    const amountA = liquidityAmountAInput.value;
+    const amountB = liquidityAmountBInput.value;
+    showModal(`Confirm Add Liquidity`, `Add liquidity: ${amountA} ${tokenA.symbol.toUpperCase()} & ${amountB} ${tokenB.symbol.toUpperCase()}?`, async () => {
+      liquidityStatus.textContent = 'Adding liquidity...';
+      try {
+        await new Promise(res => setTimeout(res, 3000));
+        liquidityStatus.textContent = `Liquidity added successfully!`;
+        await updateBalances();
+      } catch(e) {
+        liquidityStatus.textContent = `Add liquidity failed: ${e.message}`;
+      }
+    });
+  });
+
+  // Stake button click
+  stakeBtn.addEventListener('click', () => {
+    const token = getTokenByAddress(stakeTokenSelect.value);
+    const amount = stakeAmountInput.value;
+    showModal(`Confirm Stake`, `Stake ${amount} ${token.symbol.toUpperCase()}?`, async () => {
+      stakeStatus.textContent = 'Staking tokens...';
+      try {
+        await new Promise(res => setTimeout(res, 3000));
+        stakeStatus.textContent = 'Stake successful!';
+        await updateBalances();
+      } catch(e) {
+        stakeStatus.textContent = `Stake failed: ${e.message}`;
+      }
+    });
+  });
+
+  // Unstake button click
+  unstakeBtn.addEventListener('click', () => {
+    const token = getTokenByAddress(unstakeTokenSelect.value);
+    const amount = unstakeAmountInput.value;
+    showModal(`Confirm Unstake`, `Unstake ${amount} ${token.symbol.toUpperCase()}?`, async () => {
+      unstakeStatus.textContent = 'Unstaking tokens...';
+      try {
+        await new Promise(res => setTimeout(res, 3000));
+        unstakeStatus.textContent = 'Unstake successful!';
+        await updateBalances();
+      } catch(e) {
+        unstakeStatus.textContent = `Unstake failed: ${e.message}`;
+      }
+    });
+  });
+
+  // Deploy smart contract button click
+  deployBtn.addEventListener('click', () => {
+    const type = deployContractTypeSelect.value;
+    const name = deployTokenNameInput.value.trim();
+    const symbol = deployTokenSymbolInput.value.trim();
+    showModal('Confirm Deploy', `Deploy new ${type.toUpperCase()} contract "${name}" (${symbol})?`, async () => {
+      deployStatus.textContent = 'Deploying contract...';
+      try {
+        await new Promise(res => setTimeout(res, 4000));
+        deployStatus.textContent = `${type.toUpperCase()} Contract deployed successfully!`;
+      } catch(e) {
+        deployStatus.textContent = `Deploy failed: ${e.message}`;
+      }
+    });
+  });
+
+  // Create NFT button click
+  createNFTBtn.addEventListener('click', () => {
+    const name = nftNameInput.value.trim();
+    const description = nftDescriptionInput.value.trim();
+    const url = nftUrlInput.value.trim();
+    showModal('Confirm NFT Creation', `Create NFT "${name}" with image URL "${url}"?`, async () => {
+      createNFTStatus.textContent = 'Creating NFT...';
+      try {
+        await new Promise(res => setTimeout(res, 4000));
+        createNFTStatus.textContent = 'NFT created successfully!';
+      } catch(e) {
+        createNFTStatus.textContent = `NFT creation failed: ${e.message}`;
+      }
+    });
+  });
+
+  // Crosschain transfer click
+  crosschainBtn.addEventListener('click', () => {
+    const fromNetChainId = crosschainFromNetworkSelect.value;
+    const toNetChainId = crosschainToNetworkSelect.value;
+    const token = getTokenByAddress(crosschainTokenSelect.value);
+    const amount = crosschainAmountInput.value;
+    showModal('Confirm Crosschain Transfer', 
+      `Transfer ${amount} ${token.symbol.toUpperCase()} from network ${fromNetChainId} to ${toNetChainId}?`, async () => {
+      crosschainStatus.textContent = 'Initiating crosschain transfer...';
+      try {
+        await new Promise(res => setTimeout(res, 5000));
+        crosschainStatus.textContent = 'Crosschain transfer completed!';
+      } catch (e) {
+        crosschainStatus.textContent = `Crosschain transfer failed: ${e.message}`;
+      }
+    });
+  });
+
+  // Input event listeners for validation
+  swapFromTokenSelect.addEventListener('change', () => { checkSwapInput(); updateBalances(); });
+  swapToTokenSelect.addEventListener('change', () => { checkSwapInput(); updateBalances(); });
+  swapAmountInput.addEventListener('input', checkSwapInput);
+
+  liquidityTokenASelect.addEventListener('change', () => { checkLiquidityInput(); updateBalances(); });
+  liquidityTokenBSelect.addEventListener('change', () => { checkLiquidityInput(); updateBalances(); });
+  liquidityAmountAInput.addEventListener('input', checkLiquidityInput);
+  liquidityAmountBInput.addEventListener('input', checkLiquidityInput);
+
+  stakeTokenSelect.addEventListener('change', () => { checkStakeInput(); updateBalances(); });
+  stakeAmountInput.addEventListener('input', checkStakeInput);
+
+  unstakeTokenSelect.addEventListener('change', checkUnstakeInput);
+  unstakeAmountInput.addEventListener('input', checkUnstakeInput);
+
+  deployContractTypeSelect.addEventListener('change', checkDeployInput);
+  deployTokenNameInput.addEventListener('input', checkDeployInput);
+  deployTokenSymbolInput.addEventListener('input', checkDeployInput);
+
+  nftNameInput.addEventListener('input', checkCreateNFTInput);
+  nftDescriptionInput.addEventListener('input', checkCreateNFTInput);
+  nftUrlInput.addEventListener('input', checkCreateNFTInput);
+
+  crosschainFromNetworkSelect.addEventListener('change', checkCrosschainInput);
+  crosschainToNetworkSelect.addEventListener('change', checkCrosschainInput);
+  crosschainTokenSelect.addEventListener('change', checkCrosschainInput);
+  crosschainAmountInput.addEventListener('input', checkCrosschainInput);
+
+  // Initialize all dropdowns
+  populateTokenSelect(swapFromTokenSelect, TOKENS);
+  populateTokenSelect(swapToTokenSelect, TOKENS);
+  populateTokenSelect(liquidityTokenASelect, TOKENS);
+  populateTokenSelect(liquidityTokenBSelect, TOKENS);
+  populateTokenSelect(stakeTokenSelect, TOKENS);
+  populateTokenSelect(unstakeTokenSelect, TOKENS);
+  populateTokenSelect(crosschainTokenSelect, TOKENS);
+
+  populateNetworkSelect(crosschainFromNetworkSelect, NETWORKS);
+  populateNetworkSelect(crosschainToNetworkSelect, NETWORKS);
+
+  // Default balances disabled
+  disableInputs();
+
+  // Set default selects to first options for better UX
+  swapFromTokenSelect.selectedIndex = 0;
+  swapToTokenSelect.selectedIndex = 1;
+  liquidityTokenASelect.selectedIndex = 0;
+  liquidityTokenBSelect.selectedIndex = 1;
+  stakeTokenSelect.selectedIndex = 0;
+  unstakeTokenSelect.selectedIndex = 0;
+  crosschainFromNetworkSelect.selectedIndex = 0;
+  crosschainToNetworkSelect.selectedIndex = 1;
+  crosschainTokenSelect.selectedIndex = 0;
+
+  // On load, wallet disconnected
+  updateWalletBtn();
+
+})();
+</script>
+</body>
+</html>
+
