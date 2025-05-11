@@ -1,26 +1,21 @@
 {
+  // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
+  "extends": "ts-node/node16/tsconfig.json",
+  // Most ts-node options can be specified here using their programmatic names.
   "ts-node": {
+    // It is faster to skip typechecking.
+    // Remove if you want ts-node to do typechecking.
+    "transpileOnly": true,
+    "files": true,
     "compilerOptions": {
-      "module": "commonjs"
+      // compilerOptions specified here will override those declared below,
+      // but *only* in ts-node.  Useful if you want ts-node and tsc to use
+      // different options with a single tsconfig.json.
     }
   },
   "compilerOptions": {
-    "target": "es2019",
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "noEmit": false,
-    "jsx": "preserve",
-    "allowJs": true,
-    "noImplicitThis": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": true,
-    "lib": ["ES2019"]
-  },
-  "include": ["src"],
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "typeRoots": ["./typings/", "./node_modules/@types/"]
+  }
 }

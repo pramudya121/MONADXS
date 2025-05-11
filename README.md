@@ -1,163 +1,43 @@
-# Bridges adapters
+# Defillama Adapters
 
-## Installation 
+Follow [this guide](https://docs.llama.fi/submit-a-project) to create an adapter and submit a PR with it.
 
-   `npm i`
+Also, don't hesitate to send a message on [our discord](https://discord.defillama.com/) if we're late to merge your PR.
 
-## Adding new adapter
-### Adapter output
-Array of
-```ts 
-txHash:  string,
-blockNumber:  number,
-from:  string,
-to:  string,
-token:  string,
-isDeposit:  boolean 
-amount: BigNumber 
+> If you would like to add a `volume` adapter please submit the PR [here](https://github.com/DefiLlama/adapters)
+> - If you would like to add a `liquidations` adapter, please refer to [this readme document](https://github.com/DefiLlama/DefiLlama-Adapters/tree/main/liquidations) for details.
+
+1. PLEASE PLEASE **enable "Allow edits by maintainers" while putting up the PR.**
+2. Once your adapter has been merged, it takes time to show on the UI. No need to notify us on Discord.
+3. Sorry, We no longer accept fetch adapter for new projects (reason: https://github.com/DefiLlama/DefiLlama-Adapters/discussions/432), we prefer the tvl to be computed from blockchain data, if you have trouble with creating a the adapter, please hop onto our discord, we are happy to assist you.
+4. **For updating listing info** It is a different repo, you can find your listing in this file: https://github.com/DefiLlama/defillama-server/blob/master/defi/src/protocols/data2.ts, you can  edit it there and put up a PR
+5. Do not edit/push `package-lock.json` file as part of your changes, we use lockfileVersion 2, and most use v1 and using that messes up our CI
+6. No need to go to our discord and announce that you've created a PR, we monitor all PRs and will review it asap
+
+## Getting listed
+
+Please send answers to questions there https://github.com/DefiLlama/DefiLlama-Adapters/blob/main/pull_request_template.md when creating a PR.
+
+## Work in progress
+
+This is a work in progress. The goal is to eventually handle historical data. DefiLlama aims to be transparent, accurate and open source.
+
+If you have any suggestions, want to contribute or want to chat, please join [our discord](https://discord.defillama.com/) and drop a message.
+
+## Testing adapters
 ```
-If your bridge is on 2 chains you can create adapter for 1 chain and track both deposits and withdrawals
-```ts
-const  adapter: BridgeAdapter = {
-ethereum:  constructParams("ethereum"),
-polygon:  constructParams("polygon"),
-fantom:  constructParams("fantom"),
-avalanche:  constructParams("avax"),
-bsc:  constructParams("bsc"),
-klaytn:  constructParams("klaytn"),
-}; 
-```
-
-### Log event parameters
-```ts
-type  ContractEventParams = {
-target: string | null;
-topic: string;
-abi: string[];
-logKeys?: EventKeyMapping; // retrieve data from event log
-argKeys?: EventKeyMapping; // retrieve data from parsed event log
-argGetters?: Partial<Record<keyof  EventKeyMapping, (log: any) =>  any>>;
-txKeys?: EventKeyMapping; // retrieve data from transaction referenced in event log
-topics?: (string | null)[];
-isDeposit: boolean;
-chain?: Chain; // override chain given as parameter in getTxDataFromEVMEventLogs
-isTransfer?: boolean;
-fixedEventData?: EventKeyMapping; // hard-code any final values
-inputDataExtraction?: InputDataExtraction; // retrieve data from event log's input data field
-selectIndexesFromArrays?: EventKeyMapping; // extract data returned as an array by specifying the index of element
-functionSignatureFilter?: FunctionSignatureFilter;
-filter?: EventLogFilter;
-mapTokens?: { [token: string]: string }; // can expand to map other keys if needed
-getTokenFromReceipt?: {
-token: boolean;
-amount?: boolean;
-native?: string; // if provided native token address, will return amount of native token transferred if there are no ercs transferred
-};
+node test.js projects/pangolin/index.js
 ```
 
-### Example 
-```ts
-const  ethWithdrawalParams: PartialContractEventParams = {
-target: "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1",
-topic: "ETHWithdrawalFinalized(address,address,uint256,bytes)",
-abi: ["event ETHWithdrawalFinalized(address indexed _from, address indexed _to, uint256 _amount, bytes _data)"],
-isDeposit: false, // event type 
-logKeys: {
-  blockNumber:  "blockNumber", 
-  txHash:  "transactionHash",// if event log data key != adapter ouptup key
-},
-argKeys: {
-  to: "_to", 
-  amount: "_amount", // if event data key !== output key
-},
-fixedEventData: {
-  from: "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1", // static keys
-  token: WETH,
-},
-}; 
+## Changing RPC providers
+If you want to change RPC providers because you need archive node access or because the default ones don't work well enough you can do so by creating an `.env` file and filling it with the env variables to overwrite:
 ```
-### Bridge Data
-Create new object for your bridge in ` ./src/data/bridgeNetworkData.ts`
-```ts
-id:  1, // new id 
-displayName:  "Polygon PoS Bridge", // name
-bridgeDbName:  "polygon", // name in db
-iconLink:  "chain:polygon", // icon name in https://icons.llamao.fi/icons/
-largeTxThreshold:  10000,
-url:  "",
-chains: ["Ethereum", "Polygon"], // Bridge chains. If your bridge is on 2 chains you can create adapter for 1 chain and track both deposits and withdrawals
-destinationChain:  "Polygon", // When bridge connects 2 chains, for example Ethereum<->Optimism and there is only one adapter on one chain which tracks deposits and withdrawals for both chains
+ETHEREUM_RPC="..."
+BSC_RPC="..."
+POLYGON_RPC="..."
 ```
 
+The name of each rpc is `{CHAIN-NAME}_RPC`, and the name we use for each chain can be found [here](https://github.com/DefiLlama/defillama-sdk/blob/master/src/providers.json)
 
-### Docker 
-
-1) Build image 
-
-`docker build -f ./docker/Dockerfile -t postgres-bridges . `
-
-2) Run container
-  
-`docker run --name postgres-bridges -d -p 5433:5432 postgres-bridges`
-
-
-3) Run testing scripts in this order 
-
-syntax: `npm run {script-name} {startTimestamp} {endTimestamp} {bridgeName}`
-
-1) backfill transactions `npm run adapter`
-2) aggregate volume `npm run aggregate`
-3) calculate daily volume  `npm run daily-volume`
-
-Example: 
-```
-npm run adapter 1704690402 1704949602 arbitrum  
-npm run aggregate 1704690402 1704949602 arbitrum  
-npm run daily-volume 1704690402 1704949602 arbitrum  
-```
-Returns: 
-```
-[
-  {
-    date: '1704672000',
-    depositUSD: 20158446,
-    withdrawUSD: 4130695,
-    depositTxs: 888,
-    withdrawTxs: 71
-  },
-  {
-    date: '1704758400',
-    depositUSD: 14309807,
-    withdrawUSD: 2193118,
-    depositTxs: 237,
-    withdrawTxs: 43
-  }
-]
-```
-
-For better speed you can add custom rpc to `.env.test`
-
-Example: 
-```
-{CHAIN}_RPC=url1,url2...
-ETHEREUM_RPC=https://eth.llamarpc.com
-```
-
-
-### Testing 
-
-#### Adapter Testing:
-```bash
-npm run test [adapter name] [number of blocks to test on]
-Example: 
-npm run test across 1000
-```
-
-#### Backfill testing:
-```bash
-npm run test-txs [start ts] [end ts] [adapter name]
-Example: 
-npm run test-txs 1688476361 1688919317 synapse
-```
- 
-
+## Adapter rules
+- Never add extra npm packages, if you need a chain-level package for your chain, ask us and we'll consider it, but we can't accept any npm package that is project-specific
